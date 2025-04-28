@@ -11,16 +11,16 @@ import lombok.*;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class PlaceEntity {
+public class SeatEntity {
 
     @Id
     @Column(unique = true, nullable = false)
     @GeneratedValue()
     private Long placeId;
 
+    @Column(nullable = false, unique = true)
+    private String coordinate;
+
     @Column
     private boolean reserved = false;
-
-    @Column(nullable = false)
-    private short coordinate;
 }
