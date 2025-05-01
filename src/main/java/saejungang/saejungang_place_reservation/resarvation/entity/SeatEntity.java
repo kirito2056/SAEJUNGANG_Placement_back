@@ -16,10 +16,10 @@ public class SeatEntity {
     @Id
     @Column(unique = true, nullable = false)
     @GeneratedValue()
-    private Long placeId;
+    private Long seatId;
 
     @Column(nullable = false, unique = true)
-    private String coordinate;
+    private String floor_and_row;
 
     @Column
     private boolean reserved = false;
