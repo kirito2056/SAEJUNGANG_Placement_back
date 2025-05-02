@@ -13,8 +13,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.springframework.http.ResponseEntity.notFound;
-
 @Service
 public class SeatServiceImpl implements SeatService {
 
@@ -32,58 +30,59 @@ public class SeatServiceImpl implements SeatService {
 
     @Override
     public ResponseEntity<Object> getAllSeats() {
-        List<SeatEntity> seats = seatRepository.findAll();
-        return ResponseEntity.ok(seats);
+        return ResponseEntity.ok(seatRepository.findAll());
     }
 
     @Override
     public ResponseEntity<SeatEntity> getSeatById(Long id) {
-        Optional<SeatEntity> seatOptional = seatRepository.findById(id);
-
-        return seatOptional.map(seat -> ResponseEntity.ok().body(seat))
-                .orElseGet(() -> notFound().build());
+        return seatRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @Override
     public ResponseEntity<Object> reserveSeat(List<SeatEntity> seatEntityList) {
-        return null;
+        // 명시적으로 아직 구현되지 않았음을 알림
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                .body("Not implemented. Use reserveSeats instead.");
     }
 
     @Override
     @Transactional
     public ResponseEntity<Object> reserveSeats(List<String> seatIdentifiers) {
         if (seatIdentifiers == null || seatIdentifiers.isEmpty()) {
-            return ResponseEntity.badRequest().body("Reservation request must contain seat identifiers.");
+            return ResponseEntity.badRequest().body("예약하려면 좌석 ID가 필요합니다.");
         }
 
         List<SeatEntity> seatsToReserve = seatRepository.findByFloorAndRowIn(seatIdentifiers);
 
-        if (seatsToReserve.size() != seatIdentifiers.size()) {
-            List<String> foundIdentifiers = seatsToReserve.stream()
-                    .map(SeatEntity::getFloor_and_row)
-                    .collect(Collectors.toList());
-            List<String> notFoundIdentifiers = seatIdentifiers.stream()
-                    .filter(id -> !foundIdentifiers.contains(id))
-                    .collect(Collectors.toList());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Some seats not found: " + notFoundIdentifiers);
-        }
-
-        List<SeatEntity> alreadyReservedSeats = seatsToReserve.stream()
-                .filter(SeatEntity::isReserved)
+        List<String> foundIdentifiers = seatsToReserve.stream()
+                .map(SeatEntity::getFloor_and_row)
                 .collect(Collectors.toList());
 
-        if (!alreadyReservedSeats.isEmpty()) {
-            List<String> reservedIdentifiers = alreadyReservedSeats.stream()
-                    .map(SeatEntity::getFloor_and_row)
-                    .collect(Collectors.toList());
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Some seats are already reserved: " + reservedIdentifiers);
+        List<String> notFoundIdentifiers = seatIdentifiers.stream()
+                .filter(id -> !foundIdentifiers.contains(id))
+                .collect(Collectors.toList());
+
+        if (!notFoundIdentifiers.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("다음 좌석을 찾을 수 없습니다: " + notFoundIdentifiers);
+        }
+
+        List<String> alreadyReserved = seatsToReserve.stream()
+                .filter(SeatEntity::isReserved)
+                .map(SeatEntity::getFloor_and_row)
+                .collect(Collectors.toList());
+
+        if (!alreadyReserved.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("다음 좌석은 이미 예약되어 있습니다: " + alreadyReserved);
         }
 
         seatsToReserve.forEach(seat -> seat.setReserved(true));
-
         seatRepository.saveAll(seatsToReserve);
 
-        return ResponseEntity.ok().body(seatsToReserve);
+        return ResponseEntity.ok(seatsToReserve);
     }
 
     @Override
