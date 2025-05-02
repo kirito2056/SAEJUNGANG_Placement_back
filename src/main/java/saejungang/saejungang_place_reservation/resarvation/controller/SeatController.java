@@ -1,10 +1,7 @@
 package saejungang.saejungang_place_reservation.resarvation.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import saejungang.saejungang_place_reservation.resarvation.entity.SeatEntity;
 import saejungang.saejungang_place_reservation.resarvation.service.SeatService;
 
@@ -13,15 +10,35 @@ import java.util.List;
 @RestController
 @RequestMapping("/place")
 public class SeatController {
-    SeatService placeService;
+    private final SeatService seatService;
 
-    @PostMapping("/reserve")
-    public ResponseEntity<Object> reservation() {
-        return placeService.reservation();
+    // 생성자 주입 (Autowired 생략 가능)
+    public SeatController(SeatService seatService) {
+        this.seatService = seatService;
     }
 
-    @PutMapping("/reservation")
-    public ResponseEntity<Object> reserve_seats(List<SeatEntity> seatEntityList) {
-        return ResponseEntity.ok(placeService.reserveSeat(seatEntityList));
+    @GetMapping("/reserve-test")
+    public ResponseEntity<Object> reservationTest() {
+        return seatService.reservation();
+    }
+
+    @GetMapping("/seats")
+    public ResponseEntity<Object> getAllSeats() {
+        return seatService.getAllSeats();
+    }
+
+    @GetMapping("/seats/{id}")
+    public ResponseEntity<SeatEntity> getSeatById(@PathVariable("id") Long id) {
+        return seatService.getSeatById(id);
+    }
+
+    @PutMapping("/seats/reserve")
+    public ResponseEntity<Object> reserveSeats(@RequestBody List<String> seatIdentifiers) {
+        return seatService.reserveSeats(seatIdentifiers);
+    }
+
+    @PutMapping("/seats/{id}/cancel")
+    public ResponseEntity<Object> cancelReserveSeat(@PathVariable("id") Long id) {
+        return seatService.cancelReserveSeat(id);
     }
 }
