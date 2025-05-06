@@ -1,9 +1,10 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from sqlalchemy.orm import Session
 
-from .manager import manager # WebSocket 매니저
-from .. import crud, schemas  # 상위 폴더 crud, schemas 참조
-from ..database import get_db # DB 세션 의존성 주입
+from ws.manager import manager # 명시적으로 ws.manager 사용
+import crud
+import schemas
+from database import get_db
 
 router = APIRouter(
     prefix="/ws",

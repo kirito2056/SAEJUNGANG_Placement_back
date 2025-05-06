@@ -1,7 +1,7 @@
 from fastapi import WebSocket
 from typing import List, Dict, Set
 import json
-from ..schemas import WebSocketMessage # 상위 폴더 schemas 참조
+from schemas import WebSocketMessage
 
 class ConnectionManager:
     def __init__(self):

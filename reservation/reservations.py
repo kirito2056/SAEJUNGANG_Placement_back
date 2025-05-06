@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
+# from .. import crud, schemas, models # 상위 폴더 참조 -> 변경
 import crud
 import schemas
 import models
+# from ..database import get_db # DB 세션 의존성 주입 -> 변경
 from database import get_db
+# from ..ws.manager import manager # WebSocket 매니저 -> 변경
 from ws.manager import manager
 
 router = APIRouter(
@@ -57,12 +60,25 @@ async def create_new_reservation(
         )
 
 @router.get("/", response_model=List[schemas.ReservationResponse])
-def read_reservations(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def read_reservations(
+    reserved_guyok: Optional[str] = None, # 구역명 필터 (선택적 쿼리 파라미터)
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
     """
-    모든 예약 목록을 조회합니다. (페이징 가능)
+    예약 목록을 조회합니다. (페이징 및 구역명 필터링 가능)
+    - `reserved_guyok` 쿼리 파라미터 제공 시 해당 구역의 예약만 반환합니다.
+    - 제공하지 않으면 모든 예약을 반환합니다.
     """
-    reservations = crud.get_reservations(db, skip=skip, limit=limit)
-    return reservations # FastAPI가 자동으로 Pydantic 모델 리스트로 변환
+    if reserved_guyok:
+        reservations = crud.get_reservations_by_guyok(db, reserved_guyok=reserved_guyok)
+        # 페이징은 구역별 조회 시에는 적용하지 않거나, 별도 로직 추가 필요
+        # 여기서는 구역별 조회 시 skip/limit 무시하고 전부 반환
+    else:
+        reservations = crud.get_reservations(db, skip=skip, limit=limit)
+
+    return reservations
 
 @router.get("/seats", response_model=List[str])
 def read_reserved_seats(db: Session = Depends(get_db)):

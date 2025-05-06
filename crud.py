@@ -1,7 +1,8 @@
 # crud.py
 from sqlalchemy.orm import Session
 from sqlalchemy import func # JSON 함수 사용 위해 추가 (선택적)
-from . import models, schemas
+import models # 변경
+import schemas # 변경
 from typing import List, Optional, Dict, Any
 
 # --- Reservation CRUD ---
@@ -84,5 +85,10 @@ def delete_reservation_by_seat(db: Session, seat_identifier: str) -> Optional[Di
         "reservation_id": original_reservation_id,
         "deleted_reservation": deleted_reservation
     }
+
+# --- 구역별 예약 조회 함수 추가 ---
+def get_reservations_by_guyok(db: Session, reserved_guyok: str) -> List[models.Reservation]:
+    """특정 구역명(reserved_guyok)으로 예약 목록을 조회합니다."""
+    return db.query(models.Reservation).filter(models.Reservation.reserved_guyok == reserved_guyok).all()
 
 # 구역별 예약 조회 등 추가 CRUD 함수 필요 시 여기에 정의
