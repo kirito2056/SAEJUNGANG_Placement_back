@@ -4,12 +4,12 @@ from sqlalchemy.orm import sessionmaker
 import os # 환경 변수 사용을 위해 추가
 
 # --- MySQL 연결 설정 ---
-# 실제 운영 환경에서는 환경 변수나 설정 파일에서 로드하는 것이 안전합니다.
-MYSQL_USER = os.getenv("MYSQL_USER", "root") # 시스템 환경 변수 MYSQL_USER 또는 기본값 'root'
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "password") # 시스템 환경 변수 MYSQL_PASSWORD 또는 기본값 'password'
-MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost") # 시스템 환경 변수 MYSQL_HOST 또는 기본값 'localhost'
-MYSQL_PORT = os.getenv("MYSQL_PORT", "3306") # 시스템 환경 변수 MYSQL_PORT 또는 기본값 '3306'
-MYSQL_DB = os.getenv("MYSQL_DB", "reservation_db") # 시스템 환경 변수 MYSQL_DB 또는 기본값 'reservation_db'
+MYSQL_USER = os.getenv("MYSQL_USER", "saejungang")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "Qwerty1234!")
+MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+MYSQL_PORT = os.getenv("MYSQL_PORT", "3306")
+MYSQL_DB = os.getenv("MYSQL_DB", "saejungang")
+
 
 # SQLAlchemy 데이터베이스 URL 형식 (MySQL + PyMySQL)
 SQLALCHEMY_DATABASE_URL = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}"
