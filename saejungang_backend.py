@@ -15,18 +15,18 @@ app = fastapi.FastAPI(
 )
 
 # --- CORS 미들웨어 설정 (필요 시) ---
-# origins = [
-#     "http://localhost",
-#     "http://localhost:3000", # 예: 프론트엔드 개발 서버 주소
-#     # 실제 배포 환경의 프론트엔드 주소 추가
-# ]
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=origins,
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+origins = [
+    "http://localhost",
+    "http://localhost:3000", # 예: 프론트엔드 개발 서버 주소
+    # 실제 배포 환경의 프론트엔드 주소 추가
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- 이벤트 핸들러: 애플리케이션 시작 시 DB 테이블 생성 ---
 @app.on_event("startup")
