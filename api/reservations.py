@@ -36,12 +36,25 @@ async def create_new_reservation(
     """
     try:
         created_reservation = crud.create_reservation(db=db, reservation=reservation)
-        # 예약 성공 후 모든 클라이언트에게 최신 예약 좌석 목록 알림
-        all_reserved_seats = crud.get_all_reserved_seat_identifiers(db)
-        await manager.broadcast(schemas.WebSocketMessage(type="reservation_update", data=all_reserved_seats))
-        # Pydantic 모델로 변환하여 반환 (자동 변환되지만 명시적으로)
-        # return schemas.ReservationResponse.from_orm(created_reservation) # Pydantic V1
-        return schemas.ReservationResponse.model_validate(created_reservation) # Pydantic V2
+        
+        # 예약 성공 후 모든 클라이언트에게 최신 "예약 정보" 목록 알림
+        reservations_orm = crud.get_reservations(db, skip=0, limit=1000) # 모든 예약 가져오기
+        payload_data: List[schemas.ReservationForWebSocket] = []
+        for r_orm in reservations_orm:
+            seats_details = [
+                schemas.SeatDetailSchema(id=sid, seat_identifier=sid) 
+                for sid in r_orm.seat_identifiers
+            ]
+            payload_data.append(
+                schemas.ReservationForWebSocket(
+                    id=r_orm.id,
+                    reserved_guyok=r_orm.reserved_guyok,
+                    seats=seats_details
+                )
+            )
+        
+        await manager.broadcast(schemas.WebSocketMessage(type="reservation_update", data=payload_data))
+        return schemas.ReservationResponse.model_validate(created_reservation)
     except ValueError as e:
         # crud.create_reservation 에서 발생시킨 중복 예약 에러 처리
         raise HTTPException(
@@ -76,7 +89,6 @@ def read_reserved_seats(db: Session = Depends(get_db)):
 async def cancel_seat_reservation(
     seat_identifier: str,
     db: Session = Depends(get_db)
-    # ws_manager: ConnectionManager = Depends(get_ws_manager) # 필요 시
 ):
     """
     특정 좌석 식별자의 예약을 취소합니다.
@@ -92,9 +104,23 @@ async def cancel_seat_reservation(
             detail=f"Seat '{seat_identifier}' is not currently reserved or reservation not found."
         )
 
-    # 예약 취소 성공 후 모든 클라이언트에게 최신 예약 좌석 목록 알림
-    all_reserved_seats = crud.get_all_reserved_seat_identifiers(db)
-    await manager.broadcast(schemas.WebSocketMessage(type="reservation_update", data=all_reserved_seats))
+    # 예약 취소 성공 후 모든 클라이언트에게 최신 "예약 정보" 목록 알림
+    reservations_orm = crud.get_reservations(db, skip=0, limit=1000) # 모든 예약 가져오기
+    payload_data: List[schemas.ReservationForWebSocket] = []
+    for r_orm in reservations_orm:
+        seats_details = [
+            schemas.SeatDetailSchema(id=sid, seat_identifier=sid) 
+            for sid in r_orm.seat_identifiers
+        ]
+        payload_data.append(
+            schemas.ReservationForWebSocket(
+                id=r_orm.id,
+                reserved_guyok=r_orm.reserved_guyok,
+                seats=seats_details
+            )
+        )
+    
+    await manager.broadcast(schemas.WebSocketMessage(type="reservation_update", data=payload_data))
 
     if result["deleted_reservation"]:
         return {"message": f"Reservation containing seat '{seat_identifier}' (ID: {result['reservation_id']}) was deleted as it was the last seat."}

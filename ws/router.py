@@ -1,10 +1,11 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from sqlalchemy.orm import Session
+from typing import List
 
-from ws.manager import manager # 명시적으로 ws.manager 사용
+from ws.manager import manager # WebSocket 매니저
 import crud
 import schemas
-from database import get_db
+from database import get_db # DB 세션 의존성 주입
 
 router = APIRouter(
     prefix="/ws",
@@ -18,20 +19,33 @@ async def websocket_endpoint(
 ):
     await manager.connect(websocket)
     try:
-        # 1. 연결 시 현재 예약된 모든 좌석 목록 전송
-        current_reserved_seats = crud.get_all_reserved_seat_identifiers(db)
+        # 1. 연결 시 현재 예약된 모든 "예약 정보" 목록 전송
+        reservations_orm = crud.get_reservations(db, skip=0, limit=1000) # 모든 예약 가져오기 (limit 충분히 크게)
+        
+        payload_data: List[schemas.ReservationForWebSocket] = []
+        for r_orm in reservations_orm:
+            seats_details = [
+                schemas.SeatDetailSchema(id=sid, seat_identifier=sid) 
+                for sid in r_orm.seat_identifiers
+            ]
+            payload_data.append(
+                schemas.ReservationForWebSocket(
+                    id=r_orm.id,
+                    reserved_guyok=r_orm.reserved_guyok,
+                    seats=seats_details
+                )
+            )
+
         await websocket.send_text(
-            schemas.WebSocketMessage(type="initial_state", data=current_reserved_seats).model_dump_json()
+            schemas.WebSocketMessage(type="initial_state", data=payload_data).model_dump_json()
         )
 
         # 2. 클라이언트로부터 메시지 수신 대기 (필요 시 로직 추가)
         while True:
             data = await websocket.receive_text()
-            # 예시: 클라이언트가 메시지를 보내는 경우 처리 로직
             print(f"Message received from {websocket.client}: {data}")
-            # 단순 에코 예시
-            # await websocket.send_text(f"Message text was: {data}")
-            # 특정 요청 처리 후 manager.broadcast() 호출 등 가능
+            # 여기서 클라이언트의 특정 요청을 처리하고 응답하거나, 상태 변경 후 브로드캐스트 할 수 있습니다.
+            # 예: await manager.broadcast(schemas.WebSocketMessage(type="some_update", data=new_payload))
 
     except WebSocketDisconnect:
         manager.disconnect(websocket)
